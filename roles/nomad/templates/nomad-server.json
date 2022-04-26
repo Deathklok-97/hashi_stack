@@ -1,0 +1,6 @@
+{
+  "Name": "nomad-server",
+  "Description": "Nomad Server Policy",
+  "Rules": "acl = \"write\"\n\nservice_prefix \"\" {\n policy = \"write\"\n}\n\nnode_prefix \"\" {\n policy = \"read\" \n}\n\nagent_prefix \"\" {\n policy = \"read\"\n}",
+  "Datacenters": ["dc1"]
+}

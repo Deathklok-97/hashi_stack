@@ -1,0 +1,8 @@
+{
+  "Name": "prod-ops",
+  "Description": "Production Operations policy",
+  "Rules": "namespace \"default\" {\n policy = \"read\"\n}\n node {\n policy =  \"write\"\n}\nagent {\n policy = \"write\"\n}\n operator {\n policy = \"write\"\n}\n plugin {\n policy = \"list\"\n}",
+  "Datacenters": ["dc1"]
+}
+
+

@@ -1,0 +1,12 @@
+---
+- name: Ensure Fail2Ban
+  become: yes
+  import_tasks: fail2ban.yml
+  tags: 
+    - FAIL2BAN
+
+- name: Ensure UFW
+  become: yes
+  import_tasks: ufw.yml
+  tags: 
+    - UFW

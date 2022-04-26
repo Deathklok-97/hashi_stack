@@ -1,0 +1,11 @@
+{% if ansible_hostname in nomad_servers %}
+consul {
+  address = "127.0.0.1:8500"
+  token = "{{ nomad_server_response['SecretID'] }}"
+}
+{% else %}
+consul {
+  address = "127.0.0.1:8500"
+  token = "{{ nomad_client_response['SecretID'] }}"
+}
+{% endif%}

@@ -1,0 +1,25 @@
+consul_user: consul
+consul_group: consul
+
+consul_force_install: true
+
+consul_tmp_dir: "/tmp"
+consul_bin_dir: "/etc/consul/bin"
+consul_config_dir: "/etc/consul.d"
+consul_data_dir: "/opt/consul"
+consul_syslog: false
+
+consul_log_dir: /var/log/consul
+consul_log_file: "{{ consul_log_dir }}/consul.log"
+consul_log_level: INFO
+
+consul_sys: /lib/systemd/system/consul.service
+
+managed_message: "ANSIBLE MANAGED"
+
+consul_token_dir: "{{ playbook_dir }}/consul_token"
+consul_token_file: "{{ consul_token_dir }}/token"
+
+consul_cert_dir: "{{ consul_config_dir }}/certs"
+
+apt_dir: "/etc/apt/sources.list.d"

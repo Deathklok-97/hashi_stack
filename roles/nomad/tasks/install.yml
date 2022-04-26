@@ -1,0 +1,94 @@
+---
+- name: Nomad | Ensure Group
+  group:
+    name: '{{ nomad_group }}'
+
+- name: Nomad | Ensure Nomad User
+  user:
+    name: '{{ nomad_user }}'
+    # password: "{{ pw|password_hash('sha256_crypt') }}"
+    group: '{{ nomad_group }}'
+    create_home: no
+
+- name: Nomad | Ensure Nomad skeleton path
+  file:
+    path: '{{ item }}'
+    state: directory
+    owner: '{{ nomad_user }}'
+    group: '{{ nomad_group }}'
+  with_items:
+    - '{{ nomad_bin_dir }}'
+    - '{{ nomad_config_dir }}'
+    - '{{ nomad_data_dir }}'
+    - '{{ nomad_log_dir }}'
+
+- name: Nomad | Download binary
+  get_url:
+    url: '{{ nomad_url }}'
+    dest: '{{ nomad_tmp_dir }}'
+    checksum: '{{ nomad_checksum }}'
+    owner: '{{ nomad_user }}'
+    group: '{{ nomad_group }}'
+
+- name: Nomad | Extract nomad
+  unarchive:
+    src: '{{ nomad_tmp_dir }}/{{ nomad_package }}'
+    dest: '{{ nomad_bin_dir }}'
+    owner: '{{ nomad_user }}'
+    group: '{{ nomad_group }}'
+    remote_src: yes
+  notify: restart nomad
+
+# apparently Did nothing
+# - name: 'Set nomad binary capabilities'
+#   become: yes
+#   capabilities:
+#     path: '{{ nomad_bin_dir }}/nomad'
+#     capability: cap_net_admin+ep
+#     state: present
+
+# - name: 'Set nomad binary capabilities'
+#   become: yes
+#   capabilities:
+#     path: '{{ nomad_bin_dir }}/nomad'
+#     capability: cap_net_raw+ep
+#     state: present
+
+# - name: 'Set nomad binary capabilities'
+#   become: yes
+#   capabilities:
+#     path: '{{ nomad_bin_dir }}/nomad'
+#     capability: cap_sys_admin+ep
+#     state: present
+
+- name: nomad | Link binary
+  file:
+    src: '{{ nomad_bin_dir }}/nomad'
+    dest: /usr/bin/nomad
+    state: link
+
+- name: Nomad | Setup System File
+  template:
+    src: nomad.service.j2
+    dest: '{{ nomad_system_file }}'
+
+- name: Nomad | Generate keygen Wan
+  command: openssl rand -base64 32
+  register: nomad_wan_key
+  run_once: true
+
+- name: Nomad | stupid jinja2
+  set_fact:
+    bootstrap_expect: "{{ groups['nomad_servers'] | length }}"
+
+- name: Nomad | Setup Base config
+  template:
+    src: nomad.hcl.j2
+    dest: '{{ nomad_config_dir }}/nomad.hcl'
+
+- name: Nomad | Reload system
+  systemd:
+    name: nomad
+    daemon_reload: yes
+    enabled: yes
+    state: restarted

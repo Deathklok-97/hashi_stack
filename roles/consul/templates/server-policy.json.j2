@@ -1,0 +1,6 @@
+{
+  "Name": "consul-server-{{ item['NodeIdentities'][0]['NodeName'] }}",
+  "Description": "Grants access to this servers node information",
+  "Rules": "node \"{{ item['NodeIdentities'][0]['NodeName'] }}\" {\n  policy = \"write\"\n} \nnode_prefix \"\" { \npolicy = \"read\"\n}\nservice_prefix \"\" {\n policy = \"read\" \n}",
+  "Datacenters": ["dc1"]
+}

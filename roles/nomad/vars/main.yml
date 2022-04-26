@@ -1,0 +1,5 @@
+nomad_url: 'https://releases.hashicorp.com/nomad/{{ nomad_version }}/{{ nomad_package }}'
+nomad_package: 'nomad_{{ nomad_version }}_linux_amd64.zip'
+
+nomad_version: 1.2.6
+nomad_checksum: sha256:a7bee57db3c3a595ecba964f7afee9c32ebb6799eb7a1682deb0a7cd8e7d08c0

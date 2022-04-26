@@ -1,0 +1,12 @@
+---
+- name: restart consul
+  become: yes
+  systemd:
+    name: consul
+    state: restarted
+
+- name: restart resolved
+  become: yes
+  systemd:
+    name: systemd-resolved
+    state: restarted 

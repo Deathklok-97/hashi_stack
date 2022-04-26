@@ -1,0 +1,174 @@
+---
+
+#This is super disruptive, we don't want clients attempting to reconnect while we're adding acl de-noise if you will
+- name: Consul | Stop Consul Nodes
+  systemd:
+    name: consul 
+    state: stopped
+  when: ansible_hostname not in consul_servers
+
+- name: Consul | Copy ACL enabled Config
+  template:
+    src: acl.v1.hcl.j2
+    dest: "{{ consul_config_dir }}/agent.hcl"
+
+- name: Consul | Restart Server
+  systemd:
+    name: consul 
+    state: restarted
+  when: ansible_hostname in consul_servers
+
+- name: Consul | Make output dir
+  file: 
+    path: "{{ playbook_dir }}/consul/output"
+    state: directory
+  delegate_to: localhost
+
+- name: Consul | Do we have a token gen'd already??
+  stat:
+    path: "{{ playbook_dir }}/consul/output/acl_token"
+  register: master_token_file
+  delegate_to: localhost
+    
+- name: Consul | Bootstrap
+  become: consul
+  uri: 
+    url: "http://127.0.0.1:8500/v1/acl/bootstrap"
+    method: PUT
+  retries: 10
+  delay: 3
+  changed_when: false
+  register: acl_token_response
+  until: ('status' in acl_token_response) and (acl_token_response.status == 200)
+  run_once: true
+  when: ansible_hostname in consul_servers and not master_token_file.stat.exists
+
+- name: Consul | Write Bootstrap token to file
+  copy:
+    content: "{{ acl_token_response | json_query('json.SecretID') }}"
+    dest: "{{ playbook_dir }}/consul/output/acl_token"
+  delegate_to: localhost
+  run_once: true
+  when: ansible_hostname in consul_servers and not master_token_file.stat.exists
+
+#post bootstrap
+
+- name: Consul | Stop Consul Nodes
+  systemd:
+    name: consul 
+    state: stopped
+  when: ansible_hostname not in consul_servers
+
+- name: Get Client Names
+  set_fact:
+    clients: "{{ consul_nodes | difference(consul_servers) }}"
+  run_once: true
+  when: ansible_hostname in consul_servers
+
+- name: Get Server Names
+  set_fact:
+    servers: "{{ consul_nodes | difference(clients) }}"
+  run_once: true
+  when: ansible_hostname in consul_servers
+
+- name: Read in Big Token
+  command: cat "{{ playbook_dir }}/consul/output/acl_token"
+  register: acl_token_output
+  run_once: true
+  delegate_to: localhost
+  when: ansible_hostname in consul_servers
+
+- name: Register Master token
+  set_fact:
+    master_token: "{{ acl_token_output.stdout }}"
+  run_once: true
+  when: ansible_hostname in consul_servers
+
+- name: Get policies from Consul
+  uri:
+    headers:
+      X-Consul-Token: "{{ master_token }}"
+    url: http://127.0.0.1:8500/v1/acl/policies
+    status_code: "200"
+    body_format: json
+  retries: 10
+  delay: 3
+  changed_when: false
+  register: general_policies_response
+  until: ('status' in general_policies_response) and (general_policies_response.status == 200)
+  run_once: true
+  when: ansible_hostname in consul_servers
+
+- name: List Consul Policies
+  set_fact:
+    general_policies_exist: "{{ general_policies_response['json'] | map(attribute='Name') | intersect(['UI', 'dns-requests']) | length == 2 }}"
+  run_once: true
+  when: ansible_hostname in consul_servers
+
+- name: Add policies to Consul
+  uri:
+    body_format: json
+    headers:
+      X-Consul-Token: "{{ master_token }}"
+    url: http://127.0.0.1:8500/v1/acl/policy
+    src: "{{ playbook_dir }}/consul/templates/{{item}}.json"
+    method: PUT
+    status_code: "200"
+  with_items:
+    - ui-policy
+    - dns-policy
+  run_once: true
+  when: ansible_hostname in consul_servers and not general_policies_exist
+
+- name: Generate tokens for servers
+  command: consul acl token create -node-identity="{{ item }}:dc1" -policy-name="UI" -format=json
+  environment: 
+    CONSUL_HTTP_TOKEN: "{{ master_token }}"
+  register: consul_tokens_list
+  run_once: true
+  with_items: "{{ consul_nodes }}"
+  when: ansible_hostname in consul_servers
+
+- name: Write out token files
+  template:
+    src: acl.v2.hcl.j2
+    dest: "{{ playbook_dir }}/consul/output/{{ item['NodeIdentities'][0]['NodeName'] }}.token"
+  with_items: "{{ consul_tokens_list.results | map(attribute='stdout') | map('from_json') | list }}"
+  delegate_to: localhost
+  run_once: true
+  when: ansible_hostname in consul_servers
+
+- name: Remove v1 File
+  file:
+    path: "{{ consul_config_dir }}/agent.hcl"
+    state: absent
+
+- name: Match file to delivery target
+  template:
+    src: "{{ playbook_dir }}/consul/output/{{ ansible_host }}.token"
+    dest: "{{ consul_config_dir }}/agent.hcl"
+
+- name: Start Servers
+  systemd:
+    name: consul 
+    state: started
+  when: ansible_hostname in consul_servers
+
+- name: Check Leader
+  uri:
+    headers:
+      X-Consul-Token: "{{ master_token }}" 
+    url: "http://127.0.0.1:8500/v1/status/leader"
+  retries: 5
+  delay: 3
+  changed_when: false
+  register: leader_selection
+  until: ('status' in leader_selection) and (leader_selection.status == 200)
+  run_once: true
+  when: ansible_hostname in consul_servers
+
+- name: Start Clients
+  systemd:
+    name: consul 
+    state: started
+  when: ansible_hostname not in consul_servers

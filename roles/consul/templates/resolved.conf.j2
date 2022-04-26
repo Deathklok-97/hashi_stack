@@ -1,0 +1,19 @@
+# Entries in this file show the compile time defaults.
+# You can change settings by editing this file.
+# Defaults can be restored by simply deleting this file.
+# See resolved.conf(5) for details
+
+#################################
+#                               #
+#       *ANSIBLE MANAGED*       #
+#                               #
+################################# 
+
+[Resolve]
+{% if ver|int() <= 245 %}
+DNS=127.0.0.1
+{% elif ver|int() > 245 %}
+DNS=127.0.0.1:8600
+{% endif %}
+DNSSEC=false
+Domains=~consul

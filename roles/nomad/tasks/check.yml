@@ -1,0 +1,11 @@
+---
+- name: Nomad | Check Nomad version
+  command: nomad --version
+  changed_when: false
+  ignore_errors: true
+  register: nomad_installed_version
+  check_mode: no
+
+- name: Set nomad_installed_version fact
+  set_fact:
+    nomad_installed_version: "{{ nomad_installed_version }}"

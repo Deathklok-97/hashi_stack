@@ -1,0 +1,21 @@
+---
+### System user and group
+nomad_user: nomad
+nomad_group: nomad
+
+### Directories
+nomad_tmp_dir: "/tmp"
+nomad_bin_dir: "/etc/nomad/bin"
+nomad_config_dir: "/etc/nomad.d"
+nomad_data_dir: "/opt/nomad"
+nomad_plugin_dir: "{{ nomad_data_dir }}/plugins"
+
+nomad_run_dir: "/var/run/nomad"
+nomad_system_file: "/etc/systemd/system/nomad.service"
+nomad_log_dir: /var/log/nomad
+nomad_log_file: "{{ nomad_log_dir }}/nomad.log"
+
+nomad_syslog: false
+nomad_debug: false
+
+file_version: "v1"

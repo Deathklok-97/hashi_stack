@@ -1,0 +1,7 @@
+---
+- name: Consul | Check Consul version
+  command: consul --version
+  changed_when: false
+  ignore_errors: true
+  register: consul_installed_version
+  check_mode: no

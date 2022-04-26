@@ -1,0 +1,17 @@
+{# {
+  "icc": false,
+  "tls": true,
+  "tlsverify": true,
+  "tlscacert": "/etc/docker/ssl/ca.pem",
+  "tlscert": "/etc/docker/ssl/server.pem",
+  "tlskey": "/etc/docker/ssl/serverkey.pem",
+  "userland-proxy": false,
+  "default-ulimit": "nofile=50:100",
+  "hosts": ["unix:///var/run/docker.sock", "tcp://0.0.0.0:2376"],
+  "insecure-registries": ["p-dockerrepo.tpgi.us:5000"]
+}  #}
+
+{# #
+# binds to unix socket by default put this in /etc/docker as daemon.json 
+# the above will bind to tcp socket 
+# #}

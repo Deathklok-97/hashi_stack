@@ -1,0 +1,8 @@
+*key*
+*_vault_init_output.json
+*.crt
+*.pem
+*.csr
+output/
+*.pyc
+__pycache__/

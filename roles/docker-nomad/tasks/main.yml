@@ -1,0 +1,31 @@
+---
+- name: Docker | Ensure Docker Group
+  become: yes
+  group:
+    name: '{{ docker_group }}'
+
+- name: Docker | Ensure Nomad Group
+  become: yes
+  group:
+    name: '{{ nomad_group }}'
+
+- name: Docker | Ensure Nomad User
+  become: yes
+  user:
+    name: '{{ nomad_user }}'
+    group: '{{ nomad_group }}'
+    create_home: no
+
+- name: Determine available groups
+  getent:
+    database: group
+
+- name: Docker Nomad | Add additional group to user
+  become: yes
+  user:
+    name: "{{ nomad_user }}"
+    groups: "{{ item }}"
+    append: yes
+  when: item in ansible_facts.getent_group
+  with_items:
+    - docker

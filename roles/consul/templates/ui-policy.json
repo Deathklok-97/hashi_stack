@@ -1,0 +1,6 @@
+{
+  "Name": "UI",
+  "Description": "Grants read access to all node information",
+  "Rules": "service_prefix \"\" {\n policy = \"read\"\n} \nkey_prefix \"\" { \n policy = \"read\"\n}\nnode_prefix \"\" {\n policy = \"read\" \n}",
+  "Datacenters": ["dc1"]
+}

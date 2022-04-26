@@ -1,0 +1,16 @@
+---
+- name: Fail2Ban | Install Prerequisites
+  apt:
+    update_cache: true
+    pkg: 
+      - fail2ban
+      - sendmail
+      - iptables-persistent
+
+- name: Fail2Ban | Ensure Jail Exists
+  template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    group: root
+    owner: root
+    mode: 0644

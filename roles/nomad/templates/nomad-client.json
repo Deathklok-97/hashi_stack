@@ -1,0 +1,6 @@
+{
+  "Name": "nomad-client",
+  "Description": "Nomad Client Policy",
+  "Rules": "agent_prefix \"\" {\n policy = \"read\"\n}\n\nnode_prefix \"\" {\n policy = \"read\"\n}\n\nservice_prefix \"\" {\n policy = \"write\"\n}\n\n# uncomment if using Consul KV with Consul Template\n# key_prefix \"\" {\n# policy = \"read\"\n# }",
+  "Datacenters": ["dc1"]
+}

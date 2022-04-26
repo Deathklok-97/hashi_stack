@@ -1,0 +1,6 @@
+---
+
+
+systemd_network_dir: "/etc/systemd/network"
+dnsmasq_dir: "/etc/dnsmasq.d"
+consul_config_dir: "/etc/consul.d"

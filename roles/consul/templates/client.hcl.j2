@@ -1,0 +1,24 @@
+
+
+data_dir = "{{ consul_data_dir }}"
+
+client_addr = "0.0.0.0"
+server = false
+bind_addr = "0.0.0.0"
+advertise_addr = "{{ ansible_default_ipv4.address }}"           
+
+encrypt = "{{ consul_encryption_key.stdout }}"
+encrypt_verify_incoming = true
+encrypt_verify_outgoing = true
+
+verify_incoming = false
+verify_outgoing = true
+verify_server_hostname = true
+ca_file = "{{ consul_cert_dir }}/consul-agent-ca.pem"
+
+auto_encrypt = {
+  tls = true
+}
+
+retry_join = {{ consul_servers | shuffle | take(3) | to_json  }}
+ 

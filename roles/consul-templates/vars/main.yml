@@ -1,0 +1,7 @@
+
+
+consul_template_download_url: "https://releases.hashicorp.com/consul-template/{{ consul_template_version }}/consul-template_{{ consul_template_version }}_linux_amd64.zip"
+consul_template_package: "consul-template_{{ consul_template_version }}_linux_amd64.zip"
+
+consul_template_version: 0.27.2
+consul_template_checksum: sha256:d3d428ede8cb6e486d74b74deb9a7cdba6a6de293f3311f178cc147f1d1837e8

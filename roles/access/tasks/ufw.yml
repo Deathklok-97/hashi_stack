@@ -1,0 +1,50 @@
+---
+- name: UFW | Allow all access from RFC1918 networks to this host
+  ufw:
+    rule: allow
+    src: '{{ item }}'
+  with_items:
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+
+#Nomad
+# port used for used where
+# 4646 HTTP APi API client calls to Agents
+# 4647 RPC agent to agent
+# 4648 TCP/UDP Serf(gossip) Server to Server
+# 20000-32000 TCP/UDP Dynamic ports Inbound traffic to Clients
+
+- name: UFW | Allow everything and enable UFW
+  ufw:
+    state: enabled
+
+- name: UFW | Set logging
+  ufw:
+    logging: 'on'
+
+- name: UFW | Load cmd_line content
+  slurp:
+    src: "/proc/cmdline"
+  register: cmd_line_data
+
+- name: UFW | Disable IPv6
+  template:
+    src: disable.ipv6.j2
+    dest: /etc/sysctl.d/10-disable-ipv6.conf
+  notify: run sysctl
+  when: 'not "ipv6.disable=1" in cmd_line_data.content|b64decode'
+
+- name: UFW | Remove ipv6 from sshd file too
+  replace: 
+    path: /etc/ssh/sshd_config
+    regexp: '(^#ListenAddress 0.0.0.0\s)(.*)$'
+    replace: 'ListenAddress 0.0.0.0'
+    backup: yes
+
+- name: UFW | disable ipv6 from firewall
+  replace: 
+    path: /etc/default/ufw
+    regexp: '(^IPV6=yes\s)(.*)$'
+    replace: 'IPV6=no'
+    backup: yes

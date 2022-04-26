@@ -1,0 +1,7 @@
+
+
+docker_group: docker
+
+# These are probably in the nomad default/vars too
+nomad_user: nomad
+nomad_group: nomad

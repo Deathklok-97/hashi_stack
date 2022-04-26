@@ -1,0 +1,64 @@
+---
+- name: Docker | Install Prerequisites
+  become: yes
+  apt:
+    pkg:
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+
+- name: Docker | Ensure Docker Group
+  become: yes
+  group:
+    name: '{{ docker_group }}'
+
+- name: Docker | Ensure Docker User
+  become: yes
+  user:
+    name: '{{ docker_user }}'
+    group: '{{ docker_group }}'
+    create_home: no
+
+- name: Docker | Check that the file exists
+  stat:
+    path: /usr/share/keyrings/docker-archive-keyring.gpg
+  register: key_result
+
+- name: Docker | Download GPG Key
+  become: yes
+  shell: |
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+  args:
+    warn: no
+  when: not key_result.stat.exists
+
+- name: Docker | Key Modes
+  become: yes
+  file:
+    path: /usr/share/keyrings/docker-archive-keyring.gpg
+    owner: root
+    group: bin
+    mode: 0644
+
+- name: Docker | Update Sources
+  become: yes
+  template:
+    src: docker.src.j2
+    dest: "{{ apt_dir }}/docker.list"
+
+- name: Docker | Install Prime Time
+  become: yes
+  apt:
+    update_cache: yes
+    pkg:
+      - docker-ce 
+      - docker-ce-cli 
+      - containerd.io
+
+- name: Docker | Enabled
+  become: yes
+  service:
+    name: docker.service
+    state: started
+    enabled: yes

@@ -1,0 +1,6 @@
+{
+  "Name": "dns-requests",
+  "Description": "Can find services via dns lookup",
+  "Rules": "service_prefix \"\" {\n policy = \"read\"\n}\n\nnode_prefix \"\" {\n policy = \"read\" \n}",
+  "Datacenters": ["dc1"]
+}

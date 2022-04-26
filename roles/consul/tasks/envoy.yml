@@ -1,0 +1,50 @@
+---
+- name: Read in Big Token
+  command: cat "{{ playbook_dir }}/consul/output/acl_token"
+  register: acl_token_output
+  run_once: true
+  delegate_to: localhost
+  when: ansible_hostname in consul_servers
+
+- name: Register Master token
+  set_fact:
+    master_token: "{{ acl_token_output.stdout }}"
+  run_once: true
+  when: ansible_hostname in consul_servers
+
+- name: Consul | Copy Mesh Config
+  template:
+    src: connect.hcl.j2
+    dest: "{{ consul_config_dir }}/connect.hcl"
+
+- name: Consul | Copy Mesh Config
+  template:
+    src: meshy.hcl.j2
+    dest: "{{ consul_config_dir }}/mesh.hcl"
+  run_once: true
+  when: ansible_hostname in consul_servers
+
+- name: Consul | Reload for config change
+  uri:
+    body_format: json
+    headers:
+      X-Consul-Token: "{{ master_token }}"
+    url: http://127.0.0.1:8500/v1/agent/reload
+    method: PUT
+    status_code: "200"
+
+- name: Envoy | Install Prerequisites
+  apt:
+    pkg:
+      - apt-transport-https 
+      - gnupg2 
+      - curl 
+      - lsb-release
+
+- name: Envoy | install func-e
+  shell:  |
+    curl https://func-e.io/install.sh | bash -s -- -b /usr/local/bin
+
+- name: Envoy | Set Version
+  command: "func-e use {{ envoy_version }}"
+

@@ -1,0 +1,14 @@
+---
+- name: restart fail2ban
+  systemd:
+    name: fail2ban
+    state: restarted
+
+- name: run sysctl
+  become: yes
+  command: sysctl --load=/etc/sysctl.d/10-disable-ipv6.conf
+
+- name: restart ssh
+  systemd:
+    name: ssh
+    state: restarted

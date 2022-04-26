@@ -1,0 +1,77 @@
+---
+
+#home
+- name: Delete Certificates
+  file:
+    path: "{{ playbook_dir }}/{{ item }}"
+    state: absent
+  with_items:
+    - consul-agent-ca-key.pem
+    - consul-agent-ca.pem
+    - dc1-server-consul-0.pem
+    - dc1-server-consul-0-key.pem 
+  delegate_to: localhost
+
+- name: Delete Consul out dir
+  file:
+    path: "{{ playbook_dir }}/consul/output"
+    state: absent
+  delegate_to: localhost
+
+#away
+- name: Services | Stopped
+  block:
+    - name: Stop service
+      service:
+        name: consul
+        state: stopped
+  rescue:
+    - name: Print when errors
+      debug:
+        msg: 'service is not here error'
+
+- name: Remove Users
+  user: 
+    name: consul
+    state: absent
+
+- name: Remove Group
+  group:
+    name: consul
+    state: absent
+
+- name: Consul | Delete dirs
+  file:
+    state: absent
+    path: "{{ item }}"
+  with_items:
+    - /etc/consul.d
+    - /opt/consul
+    - /etc/consul
+
+- name: Ansible delete file wildcard
+  become: yes
+  find:
+    paths: /
+    patterns: 
+      - consul*
+    use_regex: true
+  register: wildcard_files_to_delete
+
+- name: Ansible remove file wildcard
+  become: yes
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ wildcard_files_to_delete.files }}"
+
+- name: Remove loose files
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/systemd/system/multi-user.target.wants/consul.service
+    - /var/log/consul
+    - /var/tmp/consul_1.9.1_linux_amd64.zip
+    - /usr/lib/systemd/system/consul.service
+    - /usr/bin/consul

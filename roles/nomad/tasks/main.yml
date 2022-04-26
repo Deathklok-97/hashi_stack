@@ -1,0 +1,22 @@
+---
+- name: Check
+  import_tasks: check.yml
+  tags:
+    - check
+
+- name: Install
+  become: yes
+  import_tasks: install.yml
+  tags:
+    - install
+  when: nomad_installed_version.rc != 0 or nomad_version not in nomad_installed_version.stdout
+
+- name: Nomad | Create Consul policies
+  import_tasks: consul_hookup.yml
+  tags:
+    - acl
+
+- name: Nomad | Create nomad ACLs
+  import_tasks: acl.yml
+  tags:
+    - acl

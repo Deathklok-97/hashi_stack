@@ -1,0 +1,6 @@
+{
+  "Name": "Anonymous",
+  "Description": "Anonymous policy (read-access)",
+  "Rules": "namespace \"*\" {\n policy = \"read\"\n capabilities = [\"alloc-node-exec\"]\n}\noperator {\npolicy = \"read\"}\nquota {\n policy = \"read\"\n}\nnode {\n policy = \"read\"\n}\nplugin {\n policy = \"deny\"\n}",
+  "Datacenters": ["dc1"]
+}

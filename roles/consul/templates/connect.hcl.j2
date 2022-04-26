@@ -1,0 +1,10 @@
+{%if ansible_host in consul_servers %}
+#Enables Mesh
+connect {
+  enabled = true
+}
+{% else %}
+ports {
+  grpc = 8502
+}
+{% endif %}

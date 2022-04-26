@@ -1,0 +1,74 @@
+---
+- name: Nomad | Make output dir
+  file: 
+    path: "{{ playbook_dir }}/nomad/output"
+    state: directory
+  run_once: true
+  delegate_to: localhost
+  
+- name: Nomad | Do we have a token gen'd already??
+  stat:
+    path: "{{ playbook_dir }}/nomad/output/acl_token"
+  register: nomad_master_token_file
+  delegate_to: localhost
+ 
+- name: Nomad | Copy out ACL file to config dir
+  become: yes
+  template:
+    src: acl.hcl.j2
+    dest: "{{ nomad_config_dir }}/acl.hcl"
+
+- name: Nomad | Restart Nodes
+  become: yes
+  systemd:
+    name: nomad
+    state: restarted
+
+- name: Nomad | Bootstrap
+  uri: 
+    url: "http://localhost:4646/v1/acl/bootstrap"
+    method: PUT
+  retries: 10
+  delay: 3
+  register: nomad_acl_token_response
+  until: ('status' in nomad_acl_token_response) and (nomad_acl_token_response.status == 200)
+  when: ansible_hostname in nomad_servers and (not nomad_master_token_file.stat.exists)
+ 
+- name: Print nomad servers
+  debug:
+    msg: "response: {{ nomad_acl_token_response }}"
+  when: ansible_hostname in nomad_servers
+
+- name: Nomad | Write Bootstrap token to file
+  become: yes
+  copy:
+    content: "{{ nomad_acl_token_response | json_query('json.SecretID') }}"
+    dest: "{{ playbook_dir }}/nomad/output/acl_token"
+  delegate_to: localhost
+  when: ansible_hostname in nomad_servers and (not nomad_master_token_file.stat.exists)
+
+- name: Nomad | Read Bootstrap token to variable
+  command: cat "{{ playbook_dir }}/nomad/output/acl_token"
+  register: nomad_token_output
+  delegate_to: localhost
+
+- name: Register Nomad Management Token
+  set_fact:
+    NOMAD_TOKEN: "{{ nomad_token_output.stdout }}"
+  run_once: true
+  delegate_to: localhost  
+
+- name: Nomad | Send the Policies
+  uri:
+    headers:
+      X-Nomad-Token: "{{ NOMAD_TOKEN }}"
+    url: "http://127.0.0.1:4646/v1/acl/policy/{{ item }}"
+    src: "{{ playbook_dir }}/nomad/templates/{{ item }}.json"
+    status_code: "200"
+    body_format: json
+    method: POST
+  with_items:
+    - Anonymous
+    - app-dev
+    - prod-ops
+  when: ansible_hostname in nomad_servers 

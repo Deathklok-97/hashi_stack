@@ -1,0 +1,57 @@
+---
+- name: Dummy | Install Packages
+  become: yes
+  apt:
+    pkg:
+      - dnsmasq
+
+# Copy netdev  
+- name: Dummy | Copy NetDev
+  become: yes
+  template:
+    src: netdev
+    dest: "{{ systemd_network_dir }}/dummy0.netdev"
+
+# Copy network
+- name: Dummy | Copy Network file
+  become: yes
+  template:
+    src: network
+    dest: "{{ systemd_network_dir }}/dummy0.network"
+
+#sudo systemctl restart systemd-networkd
+- name: Dummy | Bounce systemd-networkd
+  become: yes
+  service:
+    name: systemd-networkd
+    state: restarted
+
+# Copy interfaces.json to /etc/consul.d/
+- name: Dummy | interfaces
+  become: yes
+  template:
+    src: interfaces.json
+    dest: "{{ consul_config_dir }}/interfaces.json"
+
+# Restart Consul Agents
+- name: Dummy | Bounce Consul
+  become: yes
+  service:
+    name: consul
+    state: restarted
+
+# Copy consul.conf to dnsmasq.d /etc/dnsmasq.d/consul.conf
+- name: Dummy | Put Consul Conf in dnsmasq path
+  become: yes
+  template:
+    src: consul.conf
+    dest: "{{ dnsmasq_dir }}/consul.conf"
+
+# Restart Dnsmasq
+- name: Dummy | Dnsmasq started and Enabled
+  become: yes
+  service:
+    name: dnsmasq
+    state: started
+    enabled: yes
+  notify: restart dnsmasq

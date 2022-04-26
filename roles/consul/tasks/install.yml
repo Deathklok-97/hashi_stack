@@ -1,0 +1,182 @@
+---
+- name: Consul | Install Prerequisites
+  become: yes
+  apt:
+    pkg: 
+      - unzip
+      - ca-certificates
+
+- name: Consul | Ensure Group
+  group:
+    name: "{{ consul_group }}"
+
+- name: Consul | Ensure Consul User
+  user:
+    name: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+    create_home: no
+
+- name: Consul | Ensure Consul skeleton path
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+  with_items:
+    - "{{ consul_bin_dir }}"
+    - "{{ consul_config_dir }}"
+    - "{{ consul_data_dir }}"
+    - "{{ consul_log_dir }}"
+
+- name: Consul | Download binary
+  get_url:
+    url: "{{ consul_url }}"
+    dest: "{{ consul_tmp_dir }}"
+    checksum: "{{ consul_checksum }}"
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+
+- name: Consul | Extract Consul
+  unarchive:
+    src: "{{ consul_tmp_dir }}/{{ consul_package }}"
+    dest: "{{ consul_bin_dir }}"
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+    remote_src: yes
+  notify: restart consul
+
+- name: Consul | Ensure Consul cert path
+  file:
+    path: "{{ consul_cert_dir }}"
+    state: directory
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+
+- name: Consul | Make output dir
+  file: 
+    path: "{{ playbook_dir }}/consul/output"
+    state: directory
+  delegate_to: localhost
+
+- name: Consul | Do we have a key gen'd already??
+  stat:
+    path: "{{ playbook_dir }}/consul/output/encryption_key"
+  register: keyed
+  delegate_to: localhost
+
+- name: Consul | Key gen
+  command: openssl rand -base64 32
+  register: consul_key_gen
+  delegate_to: localhost
+  when: not keyed.stat.exists
+
+- name: Consul | Key gen file write
+  copy:
+    dest: "{{ playbook_dir }}/consul/output/encryption_key"
+    content: "{{ consul_key_gen.stdout }}"
+  delegate_to: localhost
+  when: not keyed.stat.exists
+
+- name: Consul | Read Key gen file contents into var
+  command: cat "{{ playbook_dir }}/consul/output/encryption_key"
+  register: consul_encryption_key
+  delegate_to: localhost
+
+- name: Consul | stupid jinja2
+  set_fact:
+    bootstrap_expect: "{{ groups['consul_servers']|length }}"
+
+- name: Consul | Copy Server Config
+  template:
+    src: server.hcl.j2
+    dest: "{{ consul_config_dir }}/server.hcl"
+  when: ansible_hostname in consul_servers
+
+- name: Consul | Copy Client Config 
+  template:
+    src: client.hcl.j2
+    dest: "{{ consul_config_dir }}/client.hcl"
+  when: ansible_hostname not in consul_servers
+
+- name: Consul | Do we have certs?
+  stat:
+    path: "{{ playbook_dir }}/consul-agent-ca.pem"
+  register: ca_cert
+  delegate_to: localhost
+
+- name: Consul | Generate Certificates
+  command: consul tls ca create
+  delegate_to: localhost
+  run_once: true
+  when: not ca_cert.stat.exists
+
+- name: Consul | Generate Server Certs
+  command: consul tls cert create -server -dc dc1
+  delegate_to: localhost
+  run_once: true
+  when: not ca_cert.stat.exists
+
+- name: Change rights on key nonsense
+  file:
+    path: "{{ playbook_dir }}/dc1-server-consul-0-key.pem"
+    mode: 0644
+  delegate_to: localhost
+
+- name: Copy certs to out directory
+  copy:
+    src: "{{ playbook_dir }}/{{ item }}"
+    dest: "{{ consul_cert_dir }}"
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+  with_items:
+    - consul-agent-ca.pem
+    - dc1-server-consul-0.pem
+    - dc1-server-consul-0-key.pem
+  when: ansible_hostname in consul_servers
+
+- name: Change rights back on key nonsense
+  file:
+    path: "{{ consul_cert_dir }}/dc1-server-consul-0-key.pem"
+    mode: 0600
+  when: ansible_hostname in consul_servers
+
+- name: Copy Cert to client dir
+  copy:
+    src: "{{ playbook_dir }}/consul-agent-ca.pem" 
+    dest: "{{ consul_cert_dir }}"
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+  when: ansible_hostname not in consul_servers
+
+- name: Change Ownership of data dir
+  file:
+    path: "{{ consul_data_dir }}"
+    owner: "{{ consul_user }}"
+    group: "{{ consul_group }}"
+    recurse: yes
+
+- name: Consul | Copy Systemd file
+  template: 
+    src: consul.service.j2
+    dest: "{{ consul_sys }}"
+  notify: restart consul 
+
+- name: Consul | Link binary
+  file:
+    src: "{{ consul_bin_dir }}/consul"
+    dest: /usr/bin/consul
+    state: link
+
+- name: Consul | Started
+  become: yes
+  systemd:
+    daemon_reload: yes
+    name: consul 
+    state: started
+
+- name: Consul | Started and Enabled
+  become: yes
+  service:
+    name: consul
+    state: started
+    enabled: yes

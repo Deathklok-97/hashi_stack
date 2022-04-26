@@ -1,0 +1,59 @@
+---
+
+- name: Services | Stopped
+  block:
+    - name: Stop service
+      service:
+        name: nomad
+        state: stopped
+  rescue:
+    - name: Print when errors
+      debug:
+        msg: 'service is not here error'
+
+- name: Delete Local Management Token
+  file:
+    path: "{{ playbook_dir }}/nomad/output"
+    state: absent
+  delegate_to: localhost
+
+- name: Ansible delete file wildcard
+  become: yes
+  find:
+    paths: /
+    patterns:
+      - nomad*
+    use_regex: true
+  register: wildcard_files_to_delete
+
+- name: Ansible remove file wildcard
+  become: yes
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ wildcard_files_to_delete.files }}"
+
+- name: Remove Users
+  user: 
+    name: nomad
+    state: absent
+
+- name: Remove Group
+  group:
+    name: nomad
+    state: absent
+
+- name: remove moar files and directories
+  file:
+    state: absent 
+    path: "{{ item }}"
+  with_items:
+    - /etc/nomad
+    - /etc/systemd/system/nomad.service 
+    - /etc/systemd/system/multi-user.target.wants/nomad.service
+    - /var/log/nomad
+    - /home/nomad
+    - /opt/nomad
+    - /usr/local/bin/nomad
+    - /usr/bin/nomad
+    - /etc/nomad.d

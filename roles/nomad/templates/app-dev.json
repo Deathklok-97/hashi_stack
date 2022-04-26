@@ -1,0 +1,6 @@
+{
+  "Name": "app-dev",
+  "Description": "Developer policy",
+  "Rules": "namespace \"default\" {\n policy = \"read\"\n capabilities = [\"submit-job\",\"dispatch-job\",\"read-logs\"]\n}",
+  "Datacenters": ["dc1"]
+}

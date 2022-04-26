@@ -1,0 +1,32 @@
+datacenter = "dc1"
+data_dir = "{{nomad_data_dir}}"
+disable_update_check = true
+
+{% if ansible_hostname in nomad_servers %}
+server {
+  enabled = true
+  bootstrap_expect = "{{ bootstrap_expect }}"
+
+  encrypt = "{{ nomad_wan_key.stdout }}"
+}
+
+{% if file_version == 'v2' %}
+consul {
+  address = "127.0.0.1:8500"
+  token = "{{ nomad_server_response['json']['SecretID'] }}"
+}
+{% endif %}
+
+{% else %}
+client {
+  enabled = true
+}
+
+{% if file_version == 'v2' %}
+consul {
+  address = "127.0.0.1:8500"
+  token = "{{ nomad_client_response['json']['SecretID'] }}"
+}
+{% endif %}
+
+{% endif %}

@@ -1,0 +1,100 @@
+---
+
+- name: Destroy Consul
+  import_tasks: consul-destruction.yml
+  tags:
+    - consul
+
+- name: Destroy Nomad
+  import_tasks: nomad-destruction.yml
+  tags:
+    - nomad
+
+- name: Destroy Dummy Network
+  import_tasks: dummy-destruction.yml
+  tags:
+    - dummy
+
+- name: Ansible delete file wildcard
+  become: yes
+  find:
+    paths: /
+    patterns: 
+      - docker*
+    use_regex: true
+  register: wildcard_files_to_delete
+
+- name: Ansible remove file wildcard
+  become: yes
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ wildcard_files_to_delete.files }}"
+
+- name: Services | Stopped
+  block:
+    - name: Stop service
+      service:
+        name: "{{ item }}"
+        state: stopped
+      loop:
+        - docker.service
+        - docker.socket
+  rescue:
+    - name: Print when errors
+      debug:
+        msg: 'service is not here error'
+
+- name: Remove Users
+  user: 
+    name: "{{ item }}"
+    state: absent
+  loop:
+    - docker
+
+- name: Remove Group
+  group:
+    name: "{{ item }}"
+    state: absent
+  loop:
+    - docker
+
+- name: Remove loose files
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/docker/
+    - /etc/apt/sources.list.d/docker.list
+    - /usr/share/keyrings/docker-archive-keyring.gpg
+    - /run/docker
+    - /etc/default/docker
+    - /etc/init.d/docker
+    - /var/lib/docker
+    - /usr/libexec/docker
+    - /usr/share/bash-completion/completions/docker
+    - /usr/bin/docker
+    - /lib/systemd/system/docker.service
+    - /lib/systemd/system/docker.socket
+
+
+- name: Remove dpkg
+  apt:
+    state: absent
+    pkg:
+      - docker-ce 
+      - docker-ce-cli 
+      - containerd.io
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+
+# - name: Reboot host and wait for it to restart
+#   reboot:
+#     msg: "Reboot initiated by Ansible"
+#     connect_timeout: 5
+#     reboot_timeout: 300
+#     pre_reboot_delay: 0
+#     post_reboot_delay: 30
+#     test_command: whoami

@@ -1,0 +1,5 @@
+
+docker_user: docker
+docker_group: docker
+
+apt_dir: "/etc/apt/sources.list.d"

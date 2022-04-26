@@ -1,0 +1,27 @@
+[Unit]
+Description=nomad agent
+Documentation=https://nomadproject.io/docs/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+{% if ansible_hostname in nomad_servers %}
+User={{nomad_user }}
+Group={{ nomad_group }}
+{% else %}
+User=root
+Group=root
+{% endif %}
+ExecStart={{ nomad_bin_dir }}/nomad agent -config={{ nomad_config_dir }}
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+KillSignal=SIGINT
+LimitNOFILE=infinity
+LimitNPROC=infinity
+Restart=on-failure
+RestartSec=42s
+StartLimitBurst=3
+StartLimitInterval=10
+
+[Install]
+WantedBy=multi-user.target

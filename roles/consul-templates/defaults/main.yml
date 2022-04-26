@@ -1,0 +1,11 @@
+
+
+hashistack_user: hashistack
+hashistack_group: hashistack
+
+consul_template_tmp_dir: "/tmp"
+
+# consul_tmp_dir: "/tmp"
+consul_template_bin_dir: "/opt"
+# consul_config_dir: "/etc/consul.d"
+# consul_data_dir: "/etc/consul/data"

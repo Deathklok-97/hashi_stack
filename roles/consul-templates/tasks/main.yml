@@ -1,0 +1,46 @@
+---
+
+- name: Consul Templates | Ensure Group
+  become: yes
+  group:
+    name: "{{ hashistack_group }}"
+
+- name: Consul Templates | Ensure Hashistack User
+  become: yes
+  user:
+    name: "{{ hashistack_user }}"
+    group: "{{ hashistack_group }}"
+    create_home: no
+
+- name: Consul Templates | Download binary
+  become: yes
+  get_url:
+    url: "{{ consul_template_download_url }}"
+    dest: "{{ consul_template_tmp_dir }}"
+    checksum: "{{ consul_template_checksum }}"
+    owner: "{{ hashistack_user }}"
+    group: "{{ hashistack_group }}"
+
+- name: Consul Template | Ensure Skeleton Path
+  become: yes
+  file:
+    path: "{{ consul_template_bin_dir }}"
+    state: directory
+    owner: "{{ hashistack_user }}"
+    group: "{{ hashistack_group }}"
+
+- name: Consul Template | Extract Consul
+  become: yes
+  unarchive:
+    src: "{{ consul_template_tmp_dir }}/{{ consul_template_package }}"
+    dest: "{{ consul_template_bin_dir }}"
+    owner: "{{ hashistack_user }}"
+    group: "{{ hashistack_group }}"
+    remote_src: yes
+
+- name: Consul | Link binary
+  become: yes
+  file:
+    src: "{{ consul_template_bin_dir }}/consul-template"
+    dest: /usr/bin/consul-template
+    state: link

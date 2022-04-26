@@ -1,0 +1,23 @@
+---
+- hosts: services
+  vars:
+    # - consul_servers: "{{groups['consul_servers']|join(',')}}"
+    - consul_servers: "{{ groups['consul_servers'] }}"
+    - consul_nodes: "{{ groups['services'] }}"
+  roles:
+    - consul
+
+- hosts: services
+  vars:
+    - consul_servers: "{{ groups['consul_servers'] }}"
+    - nomad_servers: "{{ groups['services'] | difference(groups['consul_servers']) | first }}"
+  roles:
+    - nomad
+
+# Docker
+- hosts: docker
+  roles:
+    - docker
+    - docker-nomad
+    #- dummy-network
+

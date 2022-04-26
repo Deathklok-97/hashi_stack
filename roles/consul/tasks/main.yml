@@ -1,0 +1,30 @@
+---
+- name: Check to see if consul is installed
+  import_tasks: check.yml
+  tags:
+    - check
+
+- name: Install Consul
+  become: yes
+  import_tasks: install.yml
+  tags:
+    - install
+  when: consul_installed_version.rc != 0 or consul_version not in consul_installed_version.stdout
+
+- name: Access
+  become: yes
+  tags: 
+    - access
+  import_tasks: access.yml
+
+- name: Consul | Add Acls
+  become: yes
+  tags:
+    - acl
+  import_tasks: acl.yml
+
+- name: Consul | Time to get Meshy
+  become: yes
+  tags:
+    - acl
+  import_tasks: envoy.yml

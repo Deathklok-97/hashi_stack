@@ -1,0 +1,18 @@
+[Unit]
+Description=consul agent
+Requires=network-online.target
+After=network-online.target
+Documentation=https://www.consul.io/docs/
+
+[Service]
+PrivateTmp=true
+Restart=on-failure
+RestartSec=5
+ExecStart={{ consul_bin_dir }}/consul agent -config-dir {{ consul_config_dir }}
+User={{ consul_user }}
+Group={{ consul_group }}
+ExecReload={{ consul_bin_dir }}/consul reload
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

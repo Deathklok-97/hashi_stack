@@ -1,0 +1,10 @@
+consul_url: 'https://releases.hashicorp.com/consul/{{ consul_version }}/{{ consul_package }}'
+consul_package: 'consul_{{ consul_version }}_linux_amd64.zip'
+
+consul_version: 1.11.2
+consul_checksum: sha256:380eaff1b18a2b62d8e1d8a7cbc3f3e08b34d3f7187ee335b891ca2ba98784b3
+
+#https://www.consul.io/docs/connect/proxies/envoy#supported-versions
+#https://func-e.io/
+#Consul + Envoy are related, upgrade together
+envoy_version: 1.20.1
